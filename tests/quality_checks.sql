@@ -21,7 +21,7 @@ Usage Notes:
 -- Expectation: No Result
 SELECT 
 	sale_Date
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE sale_Date IS NULL
 	OR sale_Date > GETDATE();
 
@@ -29,41 +29,45 @@ WHERE sale_Date IS NULL
 -- expectation: No Result
 SELECT
 	Address
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE Address != TRIM(Address);
 
--- Checking for unwanted spaces
--- expectation: No Result
 SELECT
 	Town
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE Town != TRIM(Town);
 
--- Checking for unwanted spaces
--- expectation: No Result
 SELECT
 	Property_Type
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE Property_Type != TRIM(Property_Type);
 
 -- Data standardization and consistency
 SELECT DISTINCT
 	Bedrooms
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
+ORDER BY Bedrooms;
+
+SELECT DISTINCT
+	Town
+FROM dbo.Real_Estate_Data_Clean
+ORDER BY Bedrooms;
+
+SELECT DISTINCT
+	Property_Type
+FROM dbo.Real_Estate_Data_Clean
 ORDER BY Bedrooms;
 
 -- Check for nulls or negative numbers
 -- Expectation: No Results
 SELECT
 	Square_Feet
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE Square_Feet IS NULL 
 	OR Square_Feet <= 0;
 
--- Check for nulls or negative numbers
--- Expectation: No Results
 SELECT
 	Sale_Price
-FROM dbo.Real_Estate_Data
+FROM dbo.Real_Estate_Data_Clean
 WHERE Sale_Price IS NULL 
 	OR Sale_Price <= 0;
