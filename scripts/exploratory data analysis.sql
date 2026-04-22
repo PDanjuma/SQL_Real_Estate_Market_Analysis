@@ -371,3 +371,170 @@ FROM dbo.Real_Estate_Data_Clean
 WHERE Bedrooms IS NOT NULL
 GROUP BY Bedrooms
 ORDER BY Price_Rank;
+
+/*
+==========================================================================================
+Exploratory Data Analysis: Change over time Analysis
+==========================================================================================
+
+Script Purpose:
+	This script tracks how sales price change over time.
+	It shows yearly and monthly trends to identify growth patterns and seasonality.
+
+Usage:
+	- Compare performance across different years.
+	- Identify which months have highest/lowest sales.
+==========================================================================================
+*/
+
+-- =======================================================================================
+-- Calculate the total sales and average sales per year
+-- =======================================================================================
+SELECT 
+	YEAR(Sale_Date) AS Sales_Year,
+	FORMAT(SUM(Sale_Price), 'N2') AS Total_Sales,
+	FORMAT(AVG(Sale_Price), 'N2') AS Avg_Sales
+FROM Real_EState_Data_Clean
+GROUP BY YEAR(Sale_Date)
+ORDER BY Sales_Year ASC;
+-- =======================================================================================
+-- Calculate the total sales and average sales per month
+-- =======================================================================================
+SELECT 
+	MONTH(Sale_Date) AS Month,
+	FORMAT(SUM(Sale_Price), 'N2') AS Total_Sales,
+	FORMAT(AVG(Sale_Price), 'N2') AS Avg_Sales
+FROM Real_EState_Data_Clean
+GROUP BY MONTH(Sale_Date)
+ORDER BY Month ASC;
+
+/*
+==========================================================================================
+Exploratory Data Analysis: Cumulative Analysis
+==========================================================================================
+
+Script Purpose:
+	This script calculates the running totals and moving average over time.
+	It shows cumulative sales growth and average price trend.
+
+Usage:
+	- Track cumulative revenue to see total sales growth over time.
+	- Use moving averages to identify pricing trends.
+	- Monitor how metrics accumulate across different periods.
+
+==========================================================================================
+*/
+
+-- ====================================================================================
+-- Calculate the total sales and average price per year
+-- and the running total of sales and moving average of sales over time
+-- =====================================================================================
+SELECT
+	*,
+	SUM(Total_Sales) OVER(ORDER BY Sales_Year) AS Running_Total,
+	AVG(Avg_Sales) OVER(ORDER BY Sales_Year) AS Moving_Avg
+FROM(
+SELECT
+	YEAR(Sale_Date) AS Sales_Year,
+	SUM(Sale_Price) AS Total_Sales,
+	AVG(Sale_Price) AS Avg_Sales
+FROM Real_Estate_Data_Clean
+GROUP BY YEAR(Sale_Date)
+)t;
+
+/*
+==========================================================================================
+Exploratory Data Analysis: Performance Analysis
+==========================================================================================
+
+Script Purpose:
+	This script analyzes property type performance by comparing current year sales
+	to average sales and previous year sales to identify trends.
+
+Usage:
+	- Compare each property type current sales to its overall average
+	- Identify property type performing above or below average per year.
+	- Track year-over-year sales changes (increase/decrease)
+
+===========================================================================================
+*/
+
+-- =========================================================================================
+-- Analyze the yearly performance of property type by comparing each property type sales to both
+-- its average sales performance and the previous year's sales 
+-- =========================================================================================
+WITH yearly_property_sales AS (
+SELECT
+	YEAR(Sale_Date) AS Sales_Year,
+	Property_Type,
+	SUM(Sale_Price) AS Current_Sales
+FROM Real_Estate_Data_Clean
+GROUP BY YEAR(Sale_Date), Property_Type
+) 
+
+SELECT
+	Sales_Year,
+	Property_Type,
+	Current_Sales,
+	AVG(Current_Sales) OVER(PARTITION BY Property_Type) AS Avg_Property_Sales,
+	Current_Sales - AVG(Current_Sales) OVER(PARTITION BY Property_Type) AS diff_avg,
+	CASE WHEN Current_Sales - AVG(Current_Sales) OVER(PARTITION BY Property_Type) > 0 THEN 'Above avg'
+		WHEN Current_Sales - AVG(Current_Sales) OVER(PARTITION BY Property_Type) < 0 THEN 'Below avg'
+		ELSE 'Avg'
+	END Avg_Change,
+	LAG(Current_Sales) OVER(PARTITION BY Property_Type ORDER BY Sales_Year) AS Prev_Sales,
+	Current_Sales - LAG(Current_Sales) OVER(PARTITION BY Property_Type ORDER BY Sales_Year) AS diff_prev,
+	CASE WHEN Current_Sales - LAG(Current_Sales) OVER(PARTITION BY Property_Type ORDER BY Sales_Year) > 0 THEN 'Increase'
+		WHEN Current_Sales - LAG(Current_Sales) OVER(PARTITION BY Property_Type ORDER BY Sales_Year) < 0 THEN 'Decrease'
+		ELSE 'No change'
+	END Prev_Change
+FROM yearly_property_sales;
+
+/*
+==========================================================================================
+Exploratory Data Analysis: Part-to-whole Analysis
+==========================================================================================
+
+Script Purpose:
+	This scripts analyzes category contribution to overall sales by calculating each
+	category's total sales and its percentage of overall total category sales.
+
+Usage:
+	- Identify which categories contributes the most to overall sales.
+	- Calculates percentage contribution of each category.
+	- Rank categories by their sales performance.
+
+===========================================================================================
+*/
+
+-- =========================================================================================
+-- Which property type contribute the most to overall sales
+-- =========================================================================================
+SELECT
+	*,
+	SUM(Total_Sales) OVER() AS Overall_Total,
+	CONCAT(Total_Sales / SUM(Total_Sales) OVER() * 100, '%') AS Percent_Total
+FROM(
+SELECT
+	Property_Type,
+	SUM(Sale_Price) AS Total_Sales
+FROM Real_Estate_Data_Clean
+GROUP BY Property_Type
+)t
+ORDER BY Percent_Total DESC;
+
+-- =========================================================================================
+-- Which town contribute the most to overall sales
+-- =========================================================================================
+SELECT
+	*,
+	SUM(Total_Sales) OVER() AS Overall_Total,
+	Total_Sales / SUM(Total_Sales) OVER() * 100 AS Percent_Total
+FROM(
+SELECT
+	Town,
+	SUM(Sale_Price) AS Total_Sales
+FROM Real_Estate_Data_Clean
+GROUP BY Town
+)t
+ORDER BY Percent_Total DESC;
