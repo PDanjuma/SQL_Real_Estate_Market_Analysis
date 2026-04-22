@@ -104,7 +104,7 @@ ORDER BY Total_no_Property_Sales DESC;
 SELECT
 	MIN(Sale_Date) AS First_Sales_Date,
 	MAX(Sale_Date) AS Last_Sales_Date,
-	DATEDIFF(year, MIN(Sale_Date), MAX(Sale_Date))
+	DATEDIFF(year, MIN(Sale_Date), MAX(Sale_Date)) AS Year_gap
 FROM dbo.Real_Estate_Data_Clean;
 
 -- =======================================================================================
